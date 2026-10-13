@@ -1,3 +1,10 @@
+스마트폰 환경(특히 아이폰 Safari)에서 버튼을 비활성화(`disabled`)할 때 색상이 회색으로 덮어씌워지는 현상을 수정하고, **최종 결과 화면에 사용자가 선택한 7개의 답변 목록이 요약되어 표시되도록** 기능을 추가했습니다.
+
+카카오톡으로 결과를 공유할 때도 선택 기록이 URL에 압축되어 전송되므로, 링크를 열어본 여자친구분도 '우리가 각각 어떤 선택을 했는지' 한눈에 확인할 수 있습니다.
+
+GitHub의 `index.html` 파일을 아래 코드로 완전히 덮어쓰고 커밋(저장)해 주세요.
+
+```html
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -71,7 +78,6 @@
       margin-bottom: 12px;
     }
     button:active { transform: scale(0.98); }
-    button:disabled { cursor: not-allowed; opacity: 1; }
     
     .btn-outline {
       background-color: transparent;
@@ -96,14 +102,25 @@
     }
     .question-title { font-size: 20px; font-weight: 700; text-align: center; margin-bottom: 32px; word-break: keep-all; line-height: 1.4; }
     
+    .options-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    /* 스마트폰에서 비활성화 색상이 덮어씌워지는 것을 막기 위한 터치 잠금 속성 */
+    .options-container.locked {
+      pointer-events: none;
+    }
+    
     .option-btn { 
       background-color: var(--card-bg); 
       color: var(--text); 
       border: 2px solid #e2e8f0; 
       box-shadow: 0 2px 4px rgba(0,0,0,0.02); 
+      margin-bottom: 0;
     }
     
-    /* 선택된 버튼의 활성화 스타일 (사용자 피드백 유지용) */
+    /* 선택된 버튼의 활성화 스타일 */
     .option-btn.selected { 
       background-color: var(--primary) !important; 
       color: white !important; 
@@ -142,6 +159,33 @@
     .ticket-dest { font-size: 32px; font-weight: 800; margin: 8px 0; color: var(--primary); }
     .ticket-theme { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
     .ticket-slogan { font-size: 15px; color: #475569; word-break: keep-all; line-height: 1.4; }
+
+    /* 취향 기록 표시 리스트 UI */
+    .choice-list {
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid #f1f5f9;
+      text-align: left;
+    }
+    .choice-list-title {
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+    .choice-item {
+      font-size: 14px;
+      color: #334155;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      line-height: 1.4;
+    }
+    .choice-item span {
+      color: var(--primary);
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -158,8 +202,10 @@
     <div id="screen-quiz" class="screen">
       <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
       <div class="question-title" id="question-text">질문이 여기에 표시됩니다.</div>
-      <button class="option-btn" id="btn-a" onclick="selectOption('A', 'btn-a')">A</button>
-      <button class="option-btn" id="btn-b" onclick="selectOption('B', 'btn-b')">B</button>
+      <div class="options-container" id="options-container">
+        <button class="option-btn" id="btn-a" onclick="selectOption('A', 'btn-a')">A</button>
+        <button class="option-btn" id="btn-b" onclick="selectOption('B', 'btn-b')">B</button>
+      </div>
     </div>
 
     <!-- 2. 결과 (티켓) 화면 -->
@@ -174,6 +220,12 @@
         <div style="font-size: 13px; color: #64748b; margin-bottom: 4px;">우리의 여행 페르소나</div>
         <div class="ticket-theme" id="result-title">테마 이름</div>
         <div class="ticket-slogan" id="result-slogan">슬로건이 들어갑니다.</div>
+
+        <!-- 선택 기록이 표시되는 공간 -->
+        <div class="choice-list">
+          <div class="choice-list-title">우리의 취향 기록 노트</div>
+          <div id="choice-items"></div>
+        </div>
       </div>
       
       <button onclick="shareResult()">여행 티켓 공유하기</button>
@@ -182,7 +234,6 @@
   </div>
 
   <script>
-    // 여행의 템포와 선호하는 방식(취향)을 묻는 질문으로 전면 개편
     const questions = [
       { q: "여행을 준비하는 우리의 스타일은?", a: "오전엔 여기, 오후엔 저기! 계획적으로 움직이자 📝", aType: "active", b: "일단 출발! 발길 닿는 대로 다니는 게 여행이지 🚶‍♂️", bType: "chill" },
       { q: "낯선 여행지에서 아침을 맞이했을 때?", a: "여행지에서의 시간은 금! 일찍 일어나 하루를 시작 ☀️", aType: "active", b: "여행의 묘미는 여유지! 알람 없이 푹 자고 일어난다 🛌", bType: "chill" },
@@ -193,7 +244,6 @@
       { q: "하루를 마무리하는 저녁, 선호하는 분위기는?", a: "밤은 이제 시작! 밖에서 시끌벅적하게 분위기를 즐긴다 🍻", aType: "active", b: "편안한 옷으로 갈아입고 숙소에서 오붓한 야식 타임 🌙", bType: "chill" }
     ];
 
-    // 취향 기반의 테마로 결과 수정 (활동형, 휴식형, 감성형)
     const themes = {
       active: { title: "호기심 만땅 탐험가 커플 🗺️", slogan: "우리의 에너지는 지치지 않아! 동네 구석구석 모든 것을 즐기는 열정적인 여행" },
       chill: { title: "느린 호흡의 낭만 힐링 커플 🍃", slogan: "알람은 끄고 여유를 켜자! 느긋한 발걸음으로 서로에게 집중하는 휴식 같은 여행" },
@@ -202,6 +252,7 @@
 
     let currentQ = 0;
     let scores = { active: 0, chill: 0, mood: 0 };
+    let historyCodes = []; // 내가 선택한 A, B 기록을 저장
 
     function showScreen(id) {
       document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
@@ -211,6 +262,7 @@
     function startQuiz() {
       currentQ = 0;
       scores = { active: 0, chill: 0, mood: 0 };
+      historyCodes = [];
       showScreen('screen-quiz');
       renderQuestion();
     }
@@ -225,23 +277,24 @@
       btnA.innerText = q.a;
       btnB.innerText = q.b;
       
+      // 화면 렌더링 시 터치 잠금 해제 및 파란색 활성화 초기화
+      document.getElementById('options-container').classList.remove('locked');
       btnA.classList.remove('selected');
       btnB.classList.remove('selected');
-      btnA.disabled = false;
-      btnB.disabled = false;
 
       document.getElementById('progress-fill').style.width = `${((currentQ) / questions.length) * 100}%`;
     }
 
     function selectOption(choice, btnId) {
-      document.getElementById('btn-a').disabled = true;
-      document.getElementById('btn-b').disabled = true;
-      
+      // 터치 중복 방지를 위해 전체 컨테이너를 잠금 (버튼 디자인 유지)
+      document.getElementById('options-container').classList.add('locked');
       document.getElementById(btnId).classList.add('selected');
 
       const q = questions[currentQ];
       const type = choice === 'A' ? q.aType : q.bType;
+      
       scores[type]++;
+      historyCodes.push(choice); // 선택한 답변 누적 기록
       
       setTimeout(() => {
         currentQ++;
@@ -255,15 +308,33 @@
 
     function calculateResult() {
       const topThemeKey = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b);
-      displayResult(topThemeKey);
+      const historyStr = historyCodes.join(''); // 예: "ABAABBB" (URL 길이를 줄이기 위한 압축)
+      displayResult(topThemeKey, historyStr);
     }
 
-    function displayResult(themeKey) {
+    function displayResult(themeKey, historyStr) {
       const theme = themes[themeKey];
       document.getElementById('result-title').innerText = theme.title;
       document.getElementById('result-slogan').innerText = theme.slogan;
       
-      const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?t=' + themeKey;
+      // 선택 기록 목록 렌더링
+      const choiceItemsDiv = document.getElementById('choice-items');
+      choiceItemsDiv.innerHTML = '';
+      
+      if (historyStr && historyStr.length === questions.length) {
+        historyStr.split('').forEach((choice, index) => {
+          const q = questions[index];
+          const selectedText = choice === 'A' ? q.a : q.b;
+          choiceItemsDiv.innerHTML += `
+            <div class="choice-item">
+              <span>Q${index + 1}.</span> ${selectedText}
+            </div>
+          `;
+        });
+      }
+      
+      // URL 쿼리 파라미터 업데이트 (새로고침 없이 주소창에 선택 기록 포함)
+      const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?t=' + themeKey + '&h=' + historyStr;
       window.history.pushState({path:newUrl}, '', newUrl);
       
       showScreen('screen-result');
@@ -277,7 +348,7 @@
         try {
           await navigator.share({
             title: shareTitle,
-            text: "우리 여행 취향이 나왔어! 티켓을 확인해봐 🎫",
+            text: "우리 여행 취향이 나왔어! 내가 고른 7가지 기록도 티켓에서 확인해봐 🎫",
             url: shareUrl
           });
         } catch (err) {
@@ -293,9 +364,11 @@
     window.addEventListener('DOMContentLoaded', () => {
       const urlParams = new URLSearchParams(window.location.search);
       const sharedTheme = urlParams.get('t');
+      const sharedHistory = urlParams.get('h');
       
       if (sharedTheme && themes[sharedTheme]) {
-        displayResult(sharedTheme);
+        // 링크로 접속한 경우 바로 결과 티켓과 선택 기록 표시
+        displayResult(sharedTheme, sharedHistory);
       } else {
         showScreen('screen-intro');
       }
