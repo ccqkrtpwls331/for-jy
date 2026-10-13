@@ -2,62 +2,286 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>For JY</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>우리의 군산 여행 테마 찾기</title>
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#2563eb">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <link rel="apple-touch-icon" href="https://dummyimage.com/192x192/2563eb/ffffff.png&text=PWA">
+  
   <style>
+    :root {
+      --primary: #2563eb;
+      --bg: #f8fafc;
+      --text: #0f172a;
+      --card-bg: #ffffff;
+    }
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
       min-height: 100vh;
-      background-color: #f8fafc;
-      color: #0f172a;
-      text-align: center;
-      padding: 20px;
+      overflow-x: hidden;
     }
-    .card {
-      background: white;
-      padding: 2rem;
-      border-radius: 16px;
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-      max-width: 400px;
+
+    #app {
       width: 100%;
+      max-width: 480px;
+      padding: 24px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
+
+    .screen {
+      display: none;
+      width: 100%;
+      animation: fadeIn 0.4s ease-out forwards;
+    }
+    
+    .screen.active { display: flex; flex-direction: column; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Typography & Buttons */
+    h1 { font-size: 24px; font-weight: 700; margin-bottom: 12px; text-align: center; }
+    p { font-size: 16px; line-height: 1.5; text-align: center; color: #475569; margin-bottom: 32px; }
+    
     button {
-      background-color: #2563eb;
+      background-color: var(--primary);
       color: white;
       border: none;
-      padding: 12px 24px;
-      border-radius: 8px;
+      padding: 16px 24px;
+      border-radius: 12px;
       font-size: 16px;
+      font-weight: 600;
       cursor: pointer;
-      margin-top: 16px;
+      transition: transform 0.1s, opacity 0.2s;
+      width: 100%;
+      margin-bottom: 12px;
     }
+    button:active { transform: scale(0.98); }
+    
+    .btn-outline {
+      background-color: transparent;
+      color: var(--primary);
+      border: 2px solid var(--primary);
+    }
+
+    /* Quiz UI */
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: #e2e8f0;
+      border-radius: 3px;
+      margin-bottom: 32px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--primary);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    .question-title { font-size: 20px; font-weight: 700; text-align: center; margin-bottom: 32px; word-break: keep-all; }
+    .option-btn { background-color: var(--card-bg); color: var(--text); border: 2px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+    .option-btn:hover { border-color: var(--primary); }
+
+    /* Ticket UI */
+    .ticket {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+      position: relative;
+      margin-bottom: 32px;
+    }
+    .ticket::before, .ticket::after {
+      content: '';
+      position: absolute;
+      top: 60px;
+      width: 20px;
+      height: 20px;
+      background-color: var(--bg);
+      border-radius: 50%;
+    }
+    .ticket::before { left: -10px; }
+    .ticket::after { right: -10px; }
+    
+    .ticket-divider {
+      border-top: 2px dashed #e2e8f0;
+      margin: 24px 0;
+      position: relative;
+    }
+    
+    .ticket-header { display: flex; justify-content: space-between; align-items: center; color: #64748b; font-size: 14px; font-weight: 600; text-transform: uppercase; }
+    .ticket-dest { font-size: 32px; font-weight: 800; margin: 8px 0; color: var(--primary); }
+    .ticket-theme { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+    .ticket-slogan { font-size: 15px; color: #475569; word-break: keep-all; line-height: 1.4; }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h2>For JY - PWA 시작</h2>
-    <p>홈 화면에 추가하여 앱처럼 실행할 수 있습니다.</p>
-    <button onclick="alert('정상 동작합니다!')">터치 테스트</button>
+
+  <div id="app">
+    <!-- 0. 시작 화면 -->
+    <div id="screen-intro" class="screen active">
+      <h1>우리의 군산 여행<br>어떤 테마로 갈까?</h1>
+      <p>7개의 밸런스 게임을 통해<br>우리 커플에게 딱 맞는 여행 테마를 찾고<br>티켓을 발급받아 보세요.</p>
+      <button onclick="startQuiz()">테마 찾기 시작</button>
+    </div>
+
+    <!-- 1. 퀴즈 화면 -->
+    <div id="screen-quiz" class="screen">
+      <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
+      <div class="question-title" id="question-text">질문이 여기에 표시됩니다.</div>
+      <button class="option-btn" id="btn-a" onclick="selectOption('A')">A</button>
+      <button class="option-btn" id="btn-b" onclick="selectOption('B')">B</button>
+    </div>
+
+    <!-- 2. 결과 (티켓) 화면 -->
+    <div id="screen-result" class="screen">
+      <div class="ticket" id="ticket-capture">
+        <div class="ticket-header">
+          <span>Destination</span>
+          <span>Boarding Pass</span>
+        </div>
+        <div class="ticket-dest">GUNSAN</div>
+        <div class="ticket-divider"></div>
+        <div style="font-size: 13px; color: #64748b; margin-bottom: 4px;">확정된 우리 여행 테마</div>
+        <div class="ticket-theme" id="result-title">테마 이름</div>
+        <div class="ticket-slogan" id="result-slogan">슬로건이 들어갑니다.</div>
+      </div>
+      
+      <button onclick="shareResult()">여행 티켓 공유하기</button>
+      <button class="btn-outline" onclick="location.href=location.pathname">다시 하기</button>
+    </div>
   </div>
 
   <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-          .then((reg) => console.log('SW 등록 성공:', reg.scope))
-          .catch((err) => console.error('SW 등록 실패:', err));
-      });
+    const questions = [
+      { q: "아침 식사는 어떻게 할까?", a: "이성당 오픈런! 빵투어 🥐", aType: "food", b: "한일옥 소고기무국 든든하게 🍚", bType: "relax" },
+      { q: "오후의 일정은?", a: "근대화 거리에서 개화기 의상 스냅 📸", aType: "retro", b: "선유도 바다 보며 여유로운 드라이브 🚗", bType: "relax" },
+      { q: "군산 로컬 맛집 웨이팅이 1시간이라면?", a: "군산까지 왔는데 무조건 기다린다 🍜", aType: "food", b: "주변의 다른 조용한 식당으로 변경 🚶‍♂️", bType: "relax" },
+      { q: "카페 취향은 어느 쪽?", a: "일본식 가옥을 개조한 레트로 감성 ☕️", aType: "retro", b: "탁 트인 은파호수공원 뷰 대형 카페 🌅", bType: "relax" },
+      { q: "저녁의 분위기는?", a: "시끌벅적 로컬 술집에서 안주 도장깨기 🍻", aType: "food", b: "숙소에서 조용히 우리끼리 야식과 맥주 🌙", bType: "relax" },
+      { q: "여행 중 사진 기록은?", a: "삼각대 필수! 각 잡고 인생샷 남기기 🎞️", aType: "retro", b: "풍경과 음식 위주로 가볍게 스냅만 📱", bType: "food" },
+      { q: "이번 군산 여행의 전체 페이스는?", a: "최대한 많은 명소를 둘러보는 꽉 찬 일정 🏃‍♂️", aType: "retro", b: "발길 닿는 대로, 여유로운 힐링 일정 🍃", bType: "relax" }
+    ];
+
+    const themes = {
+      food: { title: "미식 도장깨기 원정대 🍽️", slogan: "웨이팅도 즐거워! 군산의 맛을 모조리 정복하는 배부른 여행" },
+      retro: { title: "시간 여행자 커플 🕰️", slogan: "골목골목 숨겨진 레트로 감성, 우리만의 특별한 화보집 완성하기" },
+      relax: { title: "서해 쉼표 여행 🌊", slogan: "은파호수와 선유도 바람 맞으며, 쫓기지 않는 여유로운 힐링" }
+    };
+
+    let currentQ = 0;
+    let scores = { food: 0, retro: 0, relax: 0 };
+
+    // 화면 전환 함수
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
     }
+
+    // 퀴즈 시작
+    function startQuiz() {
+      currentQ = 0;
+      scores = { food: 0, retro: 0, relax: 0 };
+      showScreen('screen-quiz');
+      renderQuestion();
+    }
+
+    // 질문 렌더링
+    function renderQuestion() {
+      const q = questions[currentQ];
+      document.getElementById('question-text').innerText = q.q;
+      document.getElementById('btn-a').innerText = q.a;
+      document.getElementById('btn-b').innerText = q.b;
+      document.getElementById('progress-fill').style.width = `${((currentQ) / questions.length) * 100}%`;
+    }
+
+    // 옵션 선택 처리
+    function selectOption(choice) {
+      const q = questions[currentQ];
+      const type = choice === 'A' ? q.aType : q.bType;
+      scores[type]++;
+      
+      currentQ++;
+      if (currentQ < questions.length) {
+        renderQuestion();
+      } else {
+        calculateResult();
+      }
+    }
+
+    // 결과 계산
+    function calculateResult() {
+      // 가장 점수가 높은 테마 찾기
+      const topThemeKey = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b);
+      
+      // 결과 화면 표시 (URL 파라미터 변경 없이 로컬에서 바로 렌더링)
+      displayResult(topThemeKey);
+    }
+
+    // 결과 화면 렌더링
+    function displayResult(themeKey) {
+      const theme = themes[themeKey];
+      document.getElementById('result-title').innerText = theme.title;
+      document.getElementById('result-slogan').innerText = theme.slogan;
+      
+      // URL 쿼리 파라미터 업데이트 (새로고침 없이 주소창만 변경)
+      const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?t=' + themeKey;
+      window.history.pushState({path:newUrl}, '', newUrl);
+      
+      showScreen('screen-result');
+    }
+
+    // Web Share API를 통한 링크 공유
+    async function shareResult() {
+      const shareUrl = window.location.href; // 쿼리 파라미터가 포함된 현재 주소
+      const shareTitle = "우리의 군산 여행 테마는?";
+      
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: shareTitle,
+            text: "우리 여행 테마가 정해졌어! 티켓을 확인해봐 🎫",
+            url: shareUrl
+          });
+        } catch (err) {
+          console.log('공유 취소 또는 에러:', err);
+        }
+      } else {
+        // Web Share API 지원 안 하는 환경(PC 등)은 클립보드 복사
+        navigator.clipboard.writeText(shareUrl).then(() => {
+          alert('결과 링크가 클립보드에 복사되었습니다! 카카오톡으로 전달해보세요.');
+        });
+      }
+    }
+
+    // 초기 진입 시 공유받은 링크인지 확인
+    window.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const sharedTheme = urlParams.get('t');
+      
+      if (sharedTheme && themes[sharedTheme]) {
+        // 공유 링크로 접속한 경우 바로 결과 티켓 화면 표시
+        displayResult(sharedTheme);
+      } else {
+        // 일반 접속인 경우 시작 화면 표시
+        showScreen('screen-intro');
+      }
+    });
   </script>
 </body>
 </html>
