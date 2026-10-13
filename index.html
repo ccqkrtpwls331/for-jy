@@ -129,4 +129,177 @@
       background-color: var(--bg);
       border-radius: 50%;
     }
-    .ticket
+    .ticket::before { left: -10px; }
+    .ticket::after { right: -10px; }
+    
+    .ticket-divider {
+      border-top: 2px dashed #e2e8f0;
+      margin: 24px 0;
+      position: relative;
+    }
+    
+    .ticket-header { display: flex; justify-content: space-between; align-items: center; color: #64748b; font-size: 14px; font-weight: 600; text-transform: uppercase; }
+    .ticket-dest { font-size: 32px; font-weight: 800; margin: 8px 0; color: var(--primary); }
+    .ticket-theme { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+    .ticket-slogan { font-size: 15px; color: #475569; word-break: keep-all; line-height: 1.4; }
+  </style>
+</head>
+<body>
+
+  <div id="app">
+    <!-- 0. 시작 화면 -->
+    <div id="screen-intro" class="screen active">
+      <h1>우리의 여행,<br>어떤 템포로 걸어볼까?</h1>
+      <p>7개의 밸런스 게임을 통해<br>우리 커플만의 여행 취향을 알아보고<br>여행 테마 티켓을 발급받아 보세요.</p>
+      <button onclick="startQuiz()">취향 알아보기</button>
+    </div>
+
+    <!-- 1. 퀴즈 화면 -->
+    <div id="screen-quiz" class="screen">
+      <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
+      <div class="question-title" id="question-text">질문이 여기에 표시됩니다.</div>
+      <button class="option-btn" id="btn-a" onclick="selectOption('A', 'btn-a')">A</button>
+      <button class="option-btn" id="btn-b" onclick="selectOption('B', 'btn-b')">B</button>
+    </div>
+
+    <!-- 2. 결과 (티켓) 화면 -->
+    <div id="screen-result" class="screen">
+      <div class="ticket" id="ticket-capture">
+        <div class="ticket-header">
+          <span>Destination</span>
+          <span>Boarding Pass</span>
+        </div>
+        <div class="ticket-dest">GUNSAN</div>
+        <div class="ticket-divider"></div>
+        <div style="font-size: 13px; color: #64748b; margin-bottom: 4px;">우리의 여행 페르소나</div>
+        <div class="ticket-theme" id="result-title">테마 이름</div>
+        <div class="ticket-slogan" id="result-slogan">슬로건이 들어갑니다.</div>
+      </div>
+      
+      <button onclick="shareResult()">여행 티켓 공유하기</button>
+      <button class="btn-outline" onclick="location.href=location.pathname">다시 하기</button>
+    </div>
+  </div>
+
+  <script>
+    // 여행의 템포와 선호하는 방식(취향)을 묻는 질문으로 전면 개편
+    const questions = [
+      { q: "여행을 준비하는 우리의 스타일은?", a: "오전엔 여기, 오후엔 저기! 계획적으로 움직이자 📝", aType: "active", b: "일단 출발! 발길 닿는 대로 다니는 게 여행이지 🚶‍♂️", bType: "chill" },
+      { q: "낯선 여행지에서 아침을 맞이했을 때?", a: "여행지에서의 시간은 금! 일찍 일어나 하루를 시작 ☀️", aType: "active", b: "여행의 묘미는 여유지! 알람 없이 푹 자고 일어난다 🛌", bType: "chill" },
+      { q: "점심시간, 식당을 고르는 우리의 모습은?", a: "이왕 온 거 웨이팅이 길어도 핫플에서 먹어본다 🍽️", aType: "mood", b: "기다리는 건 질색! 근처에 끌리는 식당으로 직진 🍲", bType: "chill" },
+      { q: "정말 예쁜 풍경을 마주했을 때 나의 행동은?", a: "삼각대 필수! 각 잡고 제대로 된 인생샷을 남긴다 📸", aType: "mood", b: "가볍게 찰칵 찍고 두 눈으로 온전히 풍경을 담는다 👀", bType: "chill" },
+      { q: "오후 시간에 우리는 주로 무엇을 할까?", a: "여기저기 돌아다니며 동네 구석구석을 탐험한다 🗺️", aType: "active", b: "예쁜 카페에 앉아 커피 마시며 풍경을 감상한다 ☕", bType: "mood" },
+      { q: "이번 여행에서 숙소가 가지는 의미는?", a: "숙소는 잠만 자면 OK! 동선이 편한 게 최고 🏨", aType: "active", b: "숙소도 여행의 일부! 머무는 것 자체로 힐링인 공간 ✨", bType: "mood" },
+      { q: "하루를 마무리하는 저녁, 선호하는 분위기는?", a: "밤은 이제 시작! 밖에서 시끌벅적하게 분위기를 즐긴다 🍻", aType: "active", b: "편안한 옷으로 갈아입고 숙소에서 오붓한 야식 타임 🌙", bType: "chill" }
+    ];
+
+    // 취향 기반의 테마로 결과 수정 (활동형, 휴식형, 감성형)
+    const themes = {
+      active: { title: "호기심 만땅 탐험가 커플 🗺️", slogan: "우리의 에너지는 지치지 않아! 동네 구석구석 모든 것을 즐기는 열정적인 여행" },
+      chill: { title: "느린 호흡의 낭만 힐링 커플 🍃", slogan: "알람은 끄고 여유를 켜자! 느긋한 발걸음으로 서로에게 집중하는 휴식 같은 여행" },
+      mood: { title: "로맨틱 무드 수집가 커플 📸", slogan: "우리만의 예쁜 순간을 영원히! 감성과 분위기로 가득 채워 완벽한 화보집을 만드는 여행" }
+    };
+
+    let currentQ = 0;
+    let scores = { active: 0, chill: 0, mood: 0 };
+
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    function startQuiz() {
+      currentQ = 0;
+      scores = { active: 0, chill: 0, mood: 0 };
+      showScreen('screen-quiz');
+      renderQuestion();
+    }
+
+    function renderQuestion() {
+      const q = questions[currentQ];
+      document.getElementById('question-text').innerText = q.q;
+      
+      const btnA = document.getElementById('btn-a');
+      const btnB = document.getElementById('btn-b');
+      
+      btnA.innerText = q.a;
+      btnB.innerText = q.b;
+      
+      btnA.classList.remove('selected');
+      btnB.classList.remove('selected');
+      btnA.disabled = false;
+      btnB.disabled = false;
+
+      document.getElementById('progress-fill').style.width = `${((currentQ) / questions.length) * 100}%`;
+    }
+
+    function selectOption(choice, btnId) {
+      document.getElementById('btn-a').disabled = true;
+      document.getElementById('btn-b').disabled = true;
+      
+      document.getElementById(btnId).classList.add('selected');
+
+      const q = questions[currentQ];
+      const type = choice === 'A' ? q.aType : q.bType;
+      scores[type]++;
+      
+      setTimeout(() => {
+        currentQ++;
+        if (currentQ < questions.length) {
+          renderQuestion();
+        } else {
+          calculateResult();
+        }
+      }, 700);
+    }
+
+    function calculateResult() {
+      const topThemeKey = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b);
+      displayResult(topThemeKey);
+    }
+
+    function displayResult(themeKey) {
+      const theme = themes[themeKey];
+      document.getElementById('result-title').innerText = theme.title;
+      document.getElementById('result-slogan').innerText = theme.slogan;
+      
+      const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?t=' + themeKey;
+      window.history.pushState({path:newUrl}, '', newUrl);
+      
+      showScreen('screen-result');
+    }
+
+    async function shareResult() {
+      const shareUrl = window.location.href;
+      const shareTitle = "우리의 여행 취향은?";
+      
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: shareTitle,
+            text: "우리 여행 취향이 나왔어! 티켓을 확인해봐 🎫",
+            url: shareUrl
+          });
+        } catch (err) {
+          console.log('공유 취소 또는 에러:', err);
+        }
+      } else {
+        navigator.clipboard.writeText(shareUrl).then(() => {
+          alert('결과 링크가 클립보드에 복사되었습니다! 카카오톡으로 전달해보세요.');
+        });
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const sharedTheme = urlParams.get('t');
+      
+      if (sharedTheme && themes[sharedTheme]) {
+        displayResult(sharedTheme);
+      } else {
+        showScreen('screen-intro');
+      }
+    });
+  </script>
+</body>
+</html>
